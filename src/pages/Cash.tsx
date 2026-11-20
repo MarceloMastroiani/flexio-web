@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { api } from '../lib/api'
 import { useData } from '../lib/useData'
 import { useToast } from '../components/ui/Toast'
-import type { Appointment, Payment, PaymentMethod } from '../types'
+import type { PagedAppointments, Payment, PaymentMethod } from '../types'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Select } from '../components/ui/Input'
 import { Badge, methodTone } from '../components/ui/Badge'
@@ -149,7 +149,9 @@ export default function Cash() {
 
 function PaymentModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast()
-  const appointments = useData(() => api.get<Appointment[]>('/appointments', false))
+  const appointments = useData(() =>
+    api.get<PagedAppointments>('/appointments?pageSize=100&order=desc', false),
+  )
   const [appointmentId, setAppointmentId] = useState('')
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('CASH')
@@ -157,7 +159,10 @@ function PaymentModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   const [saving, setSaving] = useState(false)
 
   const candidates = useMemo(
-    () => (appointments.data ?? []).filter((a) => a.status !== 'CANCELLED').sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()),
+    () =>
+      (appointments.data?.items ?? [])
+        .filter((a) => a.status !== 'CANCELLED')
+        .sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()),
     [appointments.data],
   )
 

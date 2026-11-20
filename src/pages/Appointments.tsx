@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import { useData } from '../lib/useData'
 import { useAuth } from '../lib/auth'
 import { useToast } from '../components/ui/Toast'
-import type { Appointment, AppointmentStatus, AvailableSlot, Customer, Employee, Service } from '../types'
+import type { Appointment, AppointmentStatus, AvailableSlot, Customer, Employee, PagedAppointments, Service } from '../types'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Select } from '../components/ui/Input'
 import { Badge, statusTone } from '../components/ui/Badge'
@@ -21,22 +21,59 @@ const STATUS_FILTERS: { value: AppointmentStatus | 'ALL'; label: string }[] = [
 
 export default function Appointments() {
   const { toast } = useToast()
-  const appointments = useData(() => api.get<Appointment[]>('/appointments'))
-  const [filter, setFilter] = useState<AppointmentStatus | 'ALL'>('ALL')
-  const [dateFilter, setDateFilter] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Appointment | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [assignTarget, setAssignTarget] = useState<Appointment | null>(null)
   const [extendTarget, setExtendTarget] = useState<Appointment | null>(null)
 
-  const filtered = useMemo(() => {
-    const all = appointments.data ?? []
-    return all
-      .filter((a) => (filter === 'ALL' ? true : a.status === filter))
-      .filter((a) => (dateFilter ? a.startsAt.startsWith(dateFilter) : true))
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
-  }, [appointments.data, filter, dateFilter])
+  // Filtros
+  const [showAll, setShowAll] = useState(false)
+  const [dateFilter, setDateFilter] = useState(todayISO())
+  const [status, setStatus] = useState<AppointmentStatus | 'ALL'>('ALL')
+  const [employeeId, setEmployeeId] = useState('')
+  const [serviceFilter, setServiceFilter] = useState('')
+  const [q, setQ] = useState('')
+  const [debouncedQ, setDebouncedQ] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [q])
+
+  const employees = useData(() => api.get<Employee[]>('/employees'))
+  const services = useData(() => api.get<Service[]>('/services', false))
+
+  const query = useMemo(() => {
+    const params = new URLSearchParams()
+    if (!showAll && dateFilter) {
+      params.set('from', dateFilter)
+      params.set('to', dateFilter)
+    }
+    if (status !== 'ALL') params.set('status', status)
+    if (employeeId) params.set('employeeId', employeeId)
+    if (serviceFilter === 'none') params.set('withoutService', 'true')
+    else if (serviceFilter) params.set('serviceId', serviceFilter)
+    if (debouncedQ) params.set('q', debouncedQ)
+    params.set('page', String(page))
+    params.set('pageSize', String(pageSize))
+    params.set('order', showAll ? 'desc' : 'asc')
+    return params.toString()
+  }, [showAll, dateFilter, status, employeeId, serviceFilter, debouncedQ, page, pageSize])
+
+  const appointments = useData(
+    () => api.get<PagedAppointments>(`/appointments?${query}`),
+    [query],
+  )
+
+  const items = appointments.data?.items ?? []
+  const total = appointments.data?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   async function removeAppointment() {
     if (!deleteTarget) return
@@ -71,92 +108,252 @@ export default function Appointments() {
         actions={<Button onClick={() => setCreateOpen(true)}>+ Nuevo turno</Button>}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-1 rounded-lg border border-surface-3 bg-surface-1 p-1">
-          {STATUS_FILTERS.map((s) => (
+      {/* Filtros */}
+      <div className="mb-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-1 rounded-lg border border-surface-3 bg-surface-1 p-1">
+            {STATUS_FILTERS.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => {
+                  setStatus(s.value)
+                  setPage(1)
+                }}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  status === s.value ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-1 rounded-lg border border-surface-3 bg-surface-1 p-1">
             <button
-              key={s.value}
-              onClick={() => setFilter(s.value)}
+              onClick={() => {
+                setShowAll(false)
+                setDateFilter(todayISO())
+                setPage(1)
+              }}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                filter === s.value ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'
+                !showAll ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'
               }`}
             >
-              {s.label}
+              Hoy
             </button>
-          ))}
+            <button
+              onClick={() => {
+                setShowAll(true)
+                setPage(1)
+              }}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                showAll ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Todos los días
+            </button>
+          </div>
         </div>
-        <div className="ml-auto">
-          <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-44" />
+
+        <div className="flex flex-wrap items-end gap-2">
+          <Input
+            type="date"
+            value={showAll ? '' : dateFilter}
+            disabled={showAll}
+            onChange={(e) => {
+              setDateFilter(e.target.value)
+              setShowAll(false)
+              setPage(1)
+            }}
+            className="w-44"
+          />
+          <Select
+            value={employeeId}
+            onChange={(e) => {
+              setEmployeeId(e.target.value)
+              setPage(1)
+            }}
+            className="w-48"
+          >
+            <option value="">Todos los empleados</option>
+            {(employees.data ?? []).map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.name}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={serviceFilter}
+            onChange={(e) => {
+              setServiceFilter(e.target.value)
+              setPage(1)
+            }}
+            className="w-48"
+          >
+            <option value="">Todos los servicios</option>
+            <option value="none">Sin servicio</option>
+            {(services.data ?? []).map((svc) => (
+              <option key={svc.id} value={svc.id}>
+                {svc.name}
+              </option>
+            ))}
+          </Select>
+          <Input
+            placeholder="Buscar cliente (nombre o teléfono)…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="w-64"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setStatus('ALL')
+              setEmployeeId('')
+              setServiceFilter('')
+              setQ('')
+              setShowAll(false)
+              setDateFilter(todayISO())
+              setPage(1)
+              setPageSize(20)
+            }}
+          >
+            Limpiar filtros
+          </Button>
         </div>
       </div>
 
-      {appointments.loading ? (
+      <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
+        <span>
+          {total} turno{total === 1 ? '' : 's'}
+          {showAll ? ' (todos los días)' : ` del ${dateFilter}`}
+        </span>
+        {appointments.loading && <span>Actualizando…</span>}
+      </div>
+
+      {appointments.loading && !appointments.data ? (
         <Spinner label="Cargando turnos…" />
       ) : appointments.error ? (
         <EmptyState title="No se pudieron cargar los turnos" subtitle={appointments.error} />
-      ) : filtered.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState
           icon="📅"
-          title="No hay turnos"
-          subtitle={filter === 'ALL' ? 'Empezá registrando el primer turno.' : 'No hay turnos con este estado.'}
-          action={<Button onClick={() => setCreateOpen(true)} size="sm">+ Nuevo turno</Button>}
+          title={showAll ? 'No hay turnos con estos filtros' : 'No hay turnos hoy'}
+          subtitle={showAll ? 'Probá cambiar los filtros.' : 'Mirá los turnos de todos los días.'}
+          action={
+            !showAll ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setShowAll(true)
+                  setPage(1)
+                }}
+              >
+                Ver todos los días
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                + Nuevo turno
+              </Button>
+            )
+          }
         />
       ) : (
-        <div className="space-y-2">
-          {filtered.map((a) => (
-            <Card key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <div className="flex w-24 flex-col">
-                <span className="text-sm font-semibold text-white">{formatTime(a.startsAt)}</span>
-                <span className="text-[11px] text-gray-500">
-                  {formatDateShort(a.startsAt)} · {durationLabel(a)}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate text-sm font-medium text-white">{a.customer.name}</p>
-                  <Badge tone={statusTone[a.status]}>{STATUS_LABEL[a.status]}</Badge>
+        <>
+          <div className="space-y-2">
+            {items.map((a) => (
+              <Card key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="flex w-24 flex-col">
+                  <span className="text-sm font-semibold text-white">{formatTime(a.startsAt)}</span>
+                  <span className="text-[11px] text-gray-500">
+                    {formatDateShort(a.startsAt)} · {durationLabel(a)}
+                  </span>
                 </div>
-                <p className="truncate text-xs text-gray-500">
-                  {a.employee.name}
-                  {a.service ? ` · ${a.service.name}` : ' · Sin servicio'}
-                  {a.notes ? ` · ${a.notes}` : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setAssignTarget(a)}
-                  className="h-8 rounded-lg border border-surface-3 px-2.5 text-xs font-medium text-gray-300 transition-colors hover:bg-surface-2 hover:text-white"
-                  title="Asignar servicio"
-                >
-                  ✂️ Servicio
-                </button>
-                <button
-                  onClick={() => setExtendTarget(a)}
-                  className="h-8 rounded-lg border border-surface-3 px-2.5 text-xs font-medium text-gray-300 transition-colors hover:bg-surface-2 hover:text-white"
-                  title="Extender turno"
-                >
-                  ⏱ Extender
-                </button>
-                <Select
-                  value={a.status}
-                  onChange={(e) => void updateStatus(a, e.target.value as AppointmentStatus)}
-                  className="h-8 w-36 text-xs"
-                >
-                  {(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as AppointmentStatus[]).map((s) => (
-                    <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-                  ))}
-                </Select>
-                <button
-                  onClick={() => setDeleteTarget(a)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-rose-950/50 hover:text-rose-400"
-                  title="Eliminar"
-                >
-                  🗑
-                </button>
-              </div>
-            </Card>
-          ))}
-        </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium text-white">{a.customer.name}</p>
+                    <Badge tone={statusTone[a.status]}>{STATUS_LABEL[a.status]}</Badge>
+                  </div>
+                  <p className="truncate text-xs text-gray-500">
+                    {a.employee.name}
+                    {a.service ? ` · ${a.service.name}` : ' · Sin servicio'}
+                    {a.notes ? ` · ${a.notes}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setAssignTarget(a)}
+                    className="h-8 rounded-lg border border-surface-3 px-2.5 text-xs font-medium text-gray-300 transition-colors hover:bg-surface-2 hover:text-white"
+                    title="Asignar servicio"
+                  >
+                    ✂️ Servicio
+                  </button>
+                  <button
+                    onClick={() => setExtendTarget(a)}
+                    className="h-8 rounded-lg border border-surface-3 px-2.5 text-xs font-medium text-gray-300 transition-colors hover:bg-surface-2 hover:text-white"
+                    title="Extender turno"
+                  >
+                    ⏱ Extender
+                  </button>
+                  <Select
+                    value={a.status}
+                    onChange={(e) => void updateStatus(a, e.target.value as AppointmentStatus)}
+                    className="h-8 w-36 text-xs"
+                  >
+                    {(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as AppointmentStatus[]).map((s) => (
+                      <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                    ))}
+                  </Select>
+                  <button
+                    onClick={() => setDeleteTarget(a)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-rose-950/50 hover:text-rose-400"
+                    title="Eliminar"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2">
+              <span>Por página</span>
+              <Select
+                value={String(pageSize)}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value))
+                  setPage(1)
+                }}
+                className="h-8 w-20 text-xs"
+              >
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>
+                Página {page} de {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       {createOpen && (

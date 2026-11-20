@@ -59,6 +59,13 @@ export interface Appointment {
   service?: Service | null
 }
 
+export interface PagedAppointments {
+  items: Appointment[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 export interface Payment {
   id: string
   amount: number | string

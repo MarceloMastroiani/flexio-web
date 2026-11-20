@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useData } from '../lib/useData'
 import { useAuth } from '../lib/auth'
-import type { Appointment, Payment } from '../types'
+import type { PagedAppointments, Payment } from '../types'
 import { Badge, statusTone } from '../components/ui/Badge'
 import { Card, EmptyState } from '../components/ui/Feedback'
-import { formatMoney, formatTime, greeting, isSameDay, toMoneyNumber, todayISO, formatDateLong } from '../lib/format'
+import { formatMoney, formatTime, greeting, toMoneyNumber, todayISO, formatDateLong } from '../lib/format'
 import { STATUS_LABEL } from '../lib/format'
 
 function DashboardSkeleton() {
@@ -24,18 +24,19 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const { user, isAdmin } = useAuth()
-  const appointments = useData(() => api.get<Appointment[]>('/appointments'))
+  const today = todayISO()
+  const appointments = useData(() =>
+    api.get<PagedAppointments>(`/appointments?from=${today}&to=${today}&pageSize=100&order=asc`),
+  )
   const todayPayments = useData<Payment[]>(
     () => api.get(`/cash/payments/day?date=${todayISO()}`),
     [],
   )
 
-  const todayAppointments = useMemo(() => {
-    if (!appointments.data) return []
-    return appointments.data
-      .filter((a) => isSameDay(a.startsAt))
-      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
-  }, [appointments.data])
+  const todayAppointments = useMemo(
+    () => appointments.data?.items ?? [],
+    [appointments.data],
+  )
 
   const pending = useMemo(() => todayAppointments.filter((a) => a.status === 'PENDING').length, [todayAppointments])
   const dayTotal = useMemo(
