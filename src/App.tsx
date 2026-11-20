@@ -13,6 +13,7 @@ import Cash from './pages/Cash'
 import Users from './pages/Users'
 import Reports from './pages/Reports'
 import Booking from './pages/Booking'
+import ManageBooking from './pages/ManageBooking'
 
 export default function App() {
   return (
@@ -20,10 +21,16 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/reservas" element={<Booking />} />
+            {/* Público */}
+            <Route path="/" element={<Booking />} />
+            <Route path="/mi-turno" element={<ManageBooking />} />
+            <Route path="/reservas" element={<Navigate to="/" replace />} />
+
+            {/* Admin */}
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/login" element={<Navigate to="/admin/login" replace />} />
             <Route
-              path="/"
+              path="/admin"
               element={
                 <ProtectedRoute>
                   <Layout />
@@ -31,12 +38,12 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="appointments" element={<Appointments />} />
-              <Route path="services" element={<Services />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="employees" element={<Employees />} />
+              <Route path="turnos" element={<Appointments />} />
+              <Route path="servicios" element={<Services />} />
+              <Route path="clientes" element={<Customers />} />
+              <Route path="empleados" element={<Employees />} />
               <Route
-                path="cash"
+                path="caja"
                 element={
                   <AdminRoute>
                     <Cash />
@@ -44,7 +51,7 @@ export default function App() {
                 }
               />
               <Route
-                path="users"
+                path="usuarios"
                 element={
                   <AdminRoute>
                     <Users />
@@ -52,7 +59,7 @@ export default function App() {
                 }
               />
               <Route
-                path="reports"
+                path="reportes"
                 element={
                   <AdminRoute>
                     <Reports />
@@ -60,6 +67,7 @@ export default function App() {
                 }
               />
             </Route>
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ToastProvider>

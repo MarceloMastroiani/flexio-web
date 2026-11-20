@@ -99,6 +99,12 @@ export default function Booking() {
           <Button onClick={reset} variant="secondary" className="mt-6">
             Hacer otra reserva
           </Button>
+          <Link
+            to="/mi-turno"
+            className="mt-3 block text-xs font-medium text-brand-300 hover:text-brand-200"
+          >
+            Gestionar mi turno →
+          </Link>
         </Card>
       </BookingShell>
     )
@@ -204,8 +210,8 @@ function BookingShell({ children }: { children: React.ReactNode }) {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm">💇</span>
             <span className="text-sm font-bold text-white">Flexio</span>
           </div>
-          <Link to="/login" className="text-xs font-medium text-gray-400 hover:text-white">
-            Acceso del personal →
+          <Link to="/mi-turno" className="text-xs font-medium text-gray-400 hover:text-white">
+            Mi turno →
           </Link>
         </div>
         {children}

@@ -71,7 +71,7 @@ export default function Dashboard() {
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Turnos de hoy</h2>
-          <Link to="/appointments" className="text-xs font-medium text-brand-400 hover:text-brand-300">
+          <Link to="/admin/turnos" className="text-xs font-medium text-brand-400 hover:text-brand-300">
             Ver todos →
           </Link>
         </div>
@@ -83,7 +83,7 @@ export default function Dashboard() {
             subtitle="Cuando se registren turnos para esta fecha, aparecerán acá."
             action={
               <Link
-                to="/appointments"
+                to="/admin/turnos"
                 className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-500"
               >
                 Nuevo turno

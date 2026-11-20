@@ -74,6 +74,15 @@ export interface AvailableSlot {
   end: string
 }
 
+export interface PublicAppointmentItem {
+  id: string
+  startsAt: string
+  endsAt: string
+  status: AppointmentStatus
+  employeeName: string
+  cancellable: boolean
+}
+
 export interface AuthUser {
   userId: string
   email: string

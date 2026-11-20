@@ -3,14 +3,14 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../lib/auth'
 
 const NAV = [
-  { to: '/', label: 'Inicio', icon: '🏠', end: true },
-  { to: '/appointments', label: 'Turnos', icon: '📅', admin: false },
-  { to: '/services', label: 'Servicios', icon: '✂️', admin: false },
-  { to: '/customers', label: 'Clientes', icon: '👥', admin: false },
-  { to: '/employees', label: 'Empleados', icon: '💇', admin: false },
-  { to: '/cash', label: 'Caja', icon: '💰', admin: true },
-  { to: '/users', label: 'Usuarios', icon: '🔐', admin: true },
-  { to: '/reports', label: 'Reportes', icon: '📊', admin: true },
+  { to: '/admin', label: 'Inicio', icon: '🏠', end: true },
+  { to: '/admin/turnos', label: 'Turnos', icon: '📅', admin: false },
+  { to: '/admin/servicios', label: 'Servicios', icon: '✂️', admin: false },
+  { to: '/admin/clientes', label: 'Clientes', icon: '👥', admin: false },
+  { to: '/admin/empleados', label: 'Empleados', icon: '💇', admin: false },
+  { to: '/admin/caja', label: 'Caja', icon: '💰', admin: true },
+  { to: '/admin/usuarios', label: 'Usuarios', icon: '🔐', admin: true },
+  { to: '/admin/reportes', label: 'Reportes', icon: '📊', admin: true },
 ]
 
 export function Layout() {
@@ -88,7 +88,7 @@ export function Layout() {
             ☰
           </button>
           <h2 className="text-sm font-medium text-gray-400">
-            {items.find((n) => n.end ? location.pathname === '/' : location.pathname.startsWith(n.to))?.label ?? 'Flexio'}
+            {items.find((n) => (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)))?.label ?? 'Flexio'}
           </h2>
           <div className="ml-auto flex items-center gap-2">
             <span className="rounded-full border border-brand-800/60 bg-brand-950/50 px-3 py-1 text-[11px] font-medium text-brand-300">
