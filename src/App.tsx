@@ -51,7 +51,14 @@ export default function App() {
                   </AdminRoute>
                 }
               />
-              <Route path="reports" element={<Reports />} />
+              <Route
+                path="reports"
+                element={
+                  <AdminRoute>
+                    <Reports />
+                  </AdminRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -10,7 +10,7 @@ const NAV = [
   { to: '/employees', label: 'Empleados', icon: '💇', admin: false },
   { to: '/cash', label: 'Caja', icon: '💰', admin: true },
   { to: '/users', label: 'Usuarios', icon: '🔐', admin: true },
-  { to: '/reports', label: 'Reportes', icon: '📊', admin: false },
+  { to: '/reports', label: 'Reportes', icon: '📊', admin: true },
 ]
 
 export function Layout() {

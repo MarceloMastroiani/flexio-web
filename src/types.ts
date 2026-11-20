@@ -79,3 +79,163 @@ export interface AuthUser {
   email: string
   role: Role
 }
+
+// ── Reportes ────────────────────────────────────────────────────────────────
+
+export type Granularity = 'day' | 'week' | 'month'
+export type OrderBy = 'count' | 'revenue'
+
+export interface ReportMeta {
+  from: string
+  to: string
+  timezone: string
+  granularity?: string
+  generatedAt: string
+  comparison?: { from: string; to: string }
+}
+
+export interface ReportResponse<T> {
+  meta: ReportMeta
+  data: T
+}
+
+export interface Delta {
+  value: number
+  previous: number
+  changePct: number | null
+}
+
+export type SummaryMetric = Delta | number
+
+export interface RevenuePoint {
+  date: string
+  total: number
+  count: number
+}
+
+export interface RevenueMethod {
+  method: string
+  total: number
+  count: number
+  sharePct: number | null
+}
+
+export interface RevenueData {
+  total: number
+  paymentsCount: number
+  averageTicket: number
+  series: RevenuePoint[]
+  byMethod: RevenueMethod[]
+}
+
+export interface AppointmentsStatus {
+  PENDING: number
+  CONFIRMED: number
+  COMPLETED: number
+  CANCELLED: number
+}
+
+export interface AppointmentsPoint {
+  date: string
+  total: number
+  completed: number
+  cancelled: number
+}
+
+export interface AppointmentsData {
+  total: number
+  byStatus: AppointmentsStatus
+  completionRatePct: number | null
+  cancellationRatePct: number | null
+  extendedCount: number
+  series: AppointmentsPoint[]
+}
+
+export interface HeatmapBusiestSlot {
+  weekday: number
+  hour: number
+  count: number
+}
+
+export interface HeatmapData {
+  matrix: number[][]
+  busiestSlot: HeatmapBusiestSlot | null
+}
+
+export interface TopServiceItem {
+  serviceId: string
+  name: string
+  count: number
+  revenue: number
+  sharePct: number | null
+}
+
+export interface ServicesData {
+  completedAppointments: number
+  appointmentsWithServices: number
+  appointmentsWithoutServices: number
+  coveragePct: number | null
+  services: TopServiceItem[]
+}
+
+export interface EmployeeReportItem {
+  employeeId: string
+  name: string
+  appointments: { total: number; completed: number; cancelled: number }
+  revenue: number
+  extendedAppointments: number
+  extendedSlotsTotal: number
+  occupancyPct: number | null
+}
+
+export interface EmployeesData {
+  employees: EmployeeReportItem[]
+  occupancyPct: number | null
+}
+
+export interface CustomerSpendItem {
+  customerId: string
+  name: string
+  visits: number
+  totalSpent: number
+}
+
+export interface CustomersData {
+  activeCustomers: number
+  newCustomers: number
+  returningCustomers: number
+  topBySpend: CustomerSpendItem[]
+  topByVisits: CustomerSpendItem[]
+}
+
+export interface InactiveCustomerItem {
+  customerId: string
+  name: string
+  phone: string | null
+  email: string | null
+  lastVisitAt: string | null
+}
+
+export interface InactiveCustomersData {
+  items: InactiveCustomerItem[]
+  page: number
+  pageSize: number
+  total: number
+}
+
+export interface SummaryTopService {
+  name: string
+  count: number
+}
+
+export interface SummaryData {
+  revenue: SummaryMetric
+  paymentsCount: SummaryMetric
+  averageTicket: SummaryMetric
+  appointmentsTotal: SummaryMetric
+  completionRatePct: SummaryMetric
+  cancellationRatePct: SummaryMetric
+  newCustomers: SummaryMetric | null
+  topService: SummaryTopService | null
+  occupancyPct: SummaryMetric | null
+}

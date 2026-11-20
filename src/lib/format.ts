@@ -93,3 +93,8 @@ export function greeting(): string {
   if (h < 19) return 'Buenas tardes'
   return 'Buenas noches'
 }
+
+export function formatPct(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—'
+  return `${value.toFixed(digits)}%`
+}
