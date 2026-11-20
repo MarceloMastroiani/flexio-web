@@ -27,7 +27,7 @@ export default function Booking() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [done, setDone] = useState<{ time: string; employee: string } | null>(null)
+  const [done, setDone] = useState<{ time: string; employee: string; startsAt: string } | null>(null)
 
   async function fetchSlots() {
     if (!employeeId) return toast('Elegí el profesional', 'info')
@@ -68,6 +68,7 @@ export default function Booking() {
       setDone({
         time: formatTime(slot.start),
         employee: employees.data?.find((e) => e.id === employeeId)?.name ?? '',
+        startsAt: slot.start,
       })
     } catch (err) {
       toast(err instanceof Error ? err.message : 'No se pudo reservar el turno', 'error')
@@ -92,7 +93,7 @@ export default function Booking() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-950/60 text-3xl">✅</div>
           <h2 className="text-lg font-bold text-white">¡Turno reservado!</h2>
           <p className="mt-2 text-sm text-gray-400">
-            Te esperamos el <span className="font-semibold text-white">{formatDateLong(date)}</span> a las{' '}
+            Te esperamos el <span className="font-semibold text-white">{formatDateLong(done.startsAt)}</span> a las{' '}
             <span className="font-semibold text-brand-300">{done.time}</span>
           </p>
           {done.employee && <p className="mt-1 text-xs text-gray-500">Con {done.employee}</p>}

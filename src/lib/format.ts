@@ -47,12 +47,25 @@ export function toMoneyNumber(value: number | string | null | undefined): number
   return Number.isNaN(n) ? 0 : n
 }
 
+/**
+ * Parsea un valor de fecha:
+ * - `YYYY-MM-DD` se interpreta como fecha local del calendario (evita el shift UTC).
+ * - Un ISO completo (con hora/zona) se parsea como instante absoluto.
+ */
+export function parseDateValue(value: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1)
+  }
+  return new Date(value)
+}
+
 export function formatDateShort(iso: string): string {
-  return dateShort.format(new Date(iso))
+  return dateShort.format(parseDateValue(iso))
 }
 
 export function formatDateLong(iso: string): string {
-  return dateLong.format(new Date(iso))
+  return dateLong.format(parseDateValue(iso))
 }
 
 export function formatTime(iso: string): string {
@@ -70,7 +83,7 @@ export function todayISO(): string {
 }
 
 export function isSameDay(iso: string, ref = new Date()): boolean {
-  const d = new Date(iso)
+  const d = parseDateValue(iso)
   return (
     d.getFullYear() === ref.getFullYear() &&
     d.getMonth() === ref.getMonth() &&
